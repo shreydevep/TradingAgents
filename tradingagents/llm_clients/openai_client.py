@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -9,6 +10,7 @@ from urllib.parse import urlparse
 from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 
+from .. import __version__
 from .api_key_env import get_api_key_env
 from .base_client import BaseLLMClient, normalize_content
 from .capabilities import get_capabilities
@@ -131,6 +133,29 @@ class DeepSeekChatOpenAI(NormalizedChatOpenAI):
             if reasoning is not None:
                 generation.message.additional_kwargs["reasoning_content"] = reasoning
         return chat_result
+
+
+class OpenCodeChatOpenAI(DeepSeekChatOpenAI):
+    """Client for the OpenCode Console gateway (Go plan or pay-as-you-go).
+
+    Console asks every client to identify itself and to send a stable session
+    ID per conversation so it can route requests and reuse prompt cache; Go
+    requires the session header. Headers are set as client defaults so they
+    travel with every request without touching the message payload.
+
+    Console serves each model through its native API and translates the rest,
+    so model quirks survive the gateway: DeepSeek IDs still need the
+    ``reasoning_content`` round-trip implemented by ``DeepSeekChatOpenAI``.
+    """
+
+    def __init__(self, **kwargs):
+        headers = {
+            "User-Agent": f"tradingagents/{__version__}",
+            "x-opencode-session": f"ses_{uuid.uuid4().hex}",
+        }
+        headers.update(kwargs.pop("default_headers", None) or {})
+        kwargs["default_headers"] = headers
+        super().__init__(**kwargs)
 
 
 class MinimaxChatOpenAI(NormalizedChatOpenAI):
@@ -271,6 +296,11 @@ OPENAI_COMPATIBLE_PROVIDERS: dict[str, ProviderSpec] = {
     "minimax":    ProviderSpec(base_url="https://api.minimax.io/v1", chat_class=MinimaxChatOpenAI),
     "minimax-cn": ProviderSpec(base_url="https://api.minimaxi.com/v1", chat_class=MinimaxChatOpenAI),
     "openrouter": ProviderSpec(base_url="https://openrouter.ai/api/v1"),
+    # OpenCode Console: Go is the default base URL; pay-as-you-go users point
+    # OPENCODE_BASE_URL at https://opencode.ai/inference/openai/v1.
+    "opencode":   ProviderSpec(base_url="https://opencode.ai/inference/go/openai/v1",
+                               base_url_env="OPENCODE_BASE_URL",
+                               chat_class=OpenCodeChatOpenAI),
     "mistral":    ProviderSpec(base_url="https://api.mistral.ai/v1"),
     "kimi":       ProviderSpec(base_url="https://api.moonshot.ai/v1"),
     "groq":       ProviderSpec(base_url="https://api.groq.com/openai/v1"),

@@ -202,6 +202,26 @@ MODEL_OPTIONS: ProviderModeOptions = {
     # Generic OpenAI-compatible endpoint: the model is whatever the user's
     # server serves, so only "Custom model ID" is offered.
     "openai_compatible": _CUSTOM_ONLY,
+    # OpenCode Console gateway (OpenCode Go / pay-as-you-go). Console serves
+    # every text model through Chat Completions, so the list mixes vendors.
+    # Usage is metered per model on a Go plan, and the lineup rotates, hence
+    # "Custom model ID" alongside the curated picks.
+    "opencode": {
+        "quick": [
+            ("GPT-6 Luna - Fast, cheapest on Go, 272K ctx", "gpt-6-luna"),
+            ("DeepSeek V4.1 Flash - Fast, 1M ctx, thinking modes", "deepseek-v4.1-flash"),
+            ("GLM-5.3-Flash - Fast, 1M ctx", "glm-5.3-flash"),
+            ("MiniMax M3.1 Flash - Fast, agentic", "minimax-m3.1-flash"),
+            ("Custom model ID", "custom"),
+        ],
+        "deep": [
+            ("DeepSeek V4 Pro - Flagship reasoning", "deepseek-v4-pro"),
+            ("Kimi K3.1 Pro - Flagship, 1M ctx", "kimi-k3.1-pro"),
+            ("GPT-6 Luna - Fast, cheapest on Go, 272K ctx", "gpt-6-luna"),
+            ("Claude Haiku 5.5 - Fast, near-frontier intelligence", "claude-haiku-5-5"),
+            ("Custom model ID", "custom"),
+        ],
+    },
     # Hosted OpenAI-compatible providers that serve many (and frequently
     # changing) models — offer "Custom model ID" rather than a list that goes
     # stale. The endpoint + key are wired by the provider; the user picks the
